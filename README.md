@@ -1,95 +1,48 @@
-# Vaibhav Tripathi — Iron / 047
+# Vaibhav Tripathi — Field Notes
 
-An Iron Man–inspired personal portfolio with a procedural, interactive arc reactor. Built with React, TypeScript, Vite, Three.js, and GSAP. All supplied professional facts and the supplied profile artwork are preserved.
+An original interactive portfolio: warm paper, serif typography, an interactive folded-paper sculpture, a scroll-driven idea journey, and a public Portfolio Quality Lab. No anime or superhero assets are loaded by the active site.
 
 ## Run
 
 ```sh
 npm install
 npm run dev -- --host 127.0.0.1 --port 5173
-```
-
-## Production build
-
-```sh
 npm run build
-npm run preview -- --host 127.0.0.1 --port 5174
+npx tsc --noEmit
+npm run test:e2e
 ```
 
-The build type-checks, bundles the application, and prerenders its professional content into `dist/index.html`. Deploy `dist/` to a static host. No paid assets, API keys, or backend are required for the core site. Essential identity, resume, project descriptions, contact details, and the fallback reactor remain readable without JavaScript.
+The browser test needs Python Playwright and Chromium, with the dev server running. `src/manga-main.tsx` is the historical entry filename; it now loads `src/FieldNotes.tsx` and `src/field-notes.css`. Earlier designs remain inactive for recovery.
 
-## Edit the profile
+## Update content without HTML
 
-`src/profile.ts` is the editable content source: name, role, biography, years of experience, artwork/alt text, projects, skills, education, certification, social links, resume URL, and contact endpoint.
+Edit **`src/content.json`**. Change `bio` to update About. Add, edit, or remove objects in `projects`. Each project needs a unique `id`, `name`, `category`, `status`, `description`, `technologies` array, and the `problem`, `contribution`, `approach`, `outcome`, `url`, and `source` keys (use `null` where unpublished). Copy an existing project object to preserve its structure. Categories currently filter as All / Web / AI. Use real claims only; a learning project with an honest status is enough.
 
-Missing information is marked as pending. The project images are original concept artwork, not product screenshots. Client names, outcomes, project stacks, dates, educational institution, and certification verification have not been invented. Add files to `public/` and use paths such as `/images/project.png` or `/resume.pdf`.
+Optional live/source links must begin with `https://` or `http://`; missing links are omitted. Do not put credentials, a private address, or secrets in this public file. The existing content includes public contact information supplied by the owner. No institutional names, client names, results, or project metrics have been invented.
 
-## Reactor experience
+Vite picks up changes while developing. For a published site, rebuild and deploy the updated files for visitors to see the change. Editing the source file is a shared-content workflow **only after deployment**. There is no public administrative editor or authenticated backend.
 
-One persistent WebGL canvas renders the same model during the boot sequence, hero inspection, and scroll-responsive background.
+The `<noscript>` summary and HTML metadata in `index.html` are static fallbacks; update these too if identity/contact details change. They do not control the interactive site's content.
 
-- **Boot:** components arrive from different depths, assemble in sequence, ignite, project the interface, and move into the hero over approximately 6.5 seconds.
-- **Skip / replay:** Skip intro and Escape are available immediately. Replay boot sequence is visible below the reactor. The boot plays once per session; direct project/resume links bypass it.
-- **Inspect:** drag the reactor housing with a mouse; use the visible left/right buttons or focus the model and use arrow keys. Reset view restores its orientation.
-- **Exploded view:** separates the housing, coils, inner assembly, and core. Reassemble reverses the transition. Part labels appear during inspection.
-- **Visual power:** Standby dims the core; Powered restores normal activity; Overdrive intensifies it for eight seconds and automatically returns to Powered. These are visual modes, not real hardware diagnostics.
-- **Pulse:** click the core or use Pulse core. Energy travels through the strands attached to the hero content. Hover/focus also activates the corresponding connection.
-- **Background:** the model moves into a subdued background position as the visitor scrolls. Mobile backgrounds stop rendering once the hero is offscreen.
+## Quality Lab
 
-The model has a segmented red-metal shell, machined steel rings, copper-colored coils, radial illuminated channels, glass, a white/cyan core, bounded particles, and controlled bloom. No external 3D models or paid assets are used.
+Visit **`/quality-lab`**. All 13 exercises from the supplied four-page worksheet are available, with the original PDF at `public/documents/portfolio-quality-lab.pdf`. The PDF is an assessment worksheet, not the owner's CV. The public page presents its instructions to visitors; they are not automatic claims that the portfolio passed them.
 
-## Motion, sound, and rendering
+Answers save to **this browser profile's localStorage** under `vt-quality-lab-v1`. They are not transmitted or published. Incognito windows and other devices have separate drafts. Storage failure shows a warning. Export produces a JSON file; Reset asks before clearing the current draft. Browser-data clearing deletes saved answers. There is no cross-device sync, grading, or fabricated peer review.
 
-Experience settings include Full, Reduced, and Off motion modes, Pause Ambient Motion, optional synthesized sounds, and Auto/Low/High visual quality.
+A static host must route `/quality-lab` to `index.html` (SPA fallback). Vite's development/preview servers already do this. Asset paths assume deployment at the domain root.
 
-The first motion setting follows the operating system. Explicit motion and pause choices are saved locally. Sound starts muted and needs a user gesture. Reduced/Off retain a static 3D scene if supported and apply interaction changes immediately. They do not run ambient render loops.
+## Interactions and accessibility
 
-The renderer caps pixel density and particle count, reduces quality after sustained slow frames, stops when the tab is hidden, and disposes of geometry, materials, environment maps, and postprocessing resources when unmounted. Unsupported WebGL, context loss, or a failed scene import leaves an SVG illustration and usable content. Animation failure cannot indefinitely block the page.
+- Pointer drag or keyboard range control turns the original SVG paper sculpture.
+- Ambient floating pauses via the adjacent control and when the sculpture is offscreen or the browser tab is hidden.
+- Native scrolling drives the paper-sculpture fall and oversized type. No forced scrolling.
+- Motion mode honors the OS initially and persists locally; reduced mode makes the journey static and shorter.
+- Filters, native skill disclosures, focus-managed project dialogs, shareable project hashes, clipboard feedback, and mobile navigation work without hidden hover-only content.
+- Email uses the visitor's email app. No contact submission backend is claimed.
+- Print / Save resume uses selectable text. No resume PDF was supplied.
+- A static no-JavaScript summary and original worksheet PDF remain available.
 
-## Existing portfolio features
+## References and verification
 
-- Accessible navigation and mobile menu.
-- Project filters, shareable detail dialogs, focus containment, Escape dismissal, and focus restoration.
-- Interactive skill diagram plus a normal skill list.
-- Expandable experience and certification records.
-- Recruiter view at `/?view=resume#resume`.
-- Project links at `/?project=supremo-ai` and `/?project=khoj-ai`.
-- Print / Save as PDF renders only the readable resume, without the reactor, backgrounds, or controls.
-- Contact validation, copy email, and truthful draft/submission feedback.
-
-## Contact configuration
-
-With `contactEndpoint: null`, the form opens a prepared draft in the visitor's email app. It does not send email and explicitly says so. The form also has a native mailto fallback without JavaScript.
-
-To enable actual submission, configure `contactEndpoint` with a service that accepts `POST` JSON `{ name, email, message }`. Success is shown only for a successful HTTP response. Failures and a 12-second timeout are handled. Configure validation, delivery, and abuse protection on the server. Never put secret credentials in this frontend.
-
-A dedicated PDF is not currently supplied; the print/save flow is available. Set `resumeUrl` when a downloadable PDF exists. Before public deployment, set canonical/absolute social metadata URLs to the final domain in `index.html` if required by the host or sharing service.
-
-## Verification
-
-With the production preview running on port 5174:
-
-```sh
-python3 tests/browser_test.py
-```
-
-Requires Python Playwright and its Chromium browser. The suite exercises the boot stages and skips, power modes, timed overdrive return, drag/keyboard inspection, explosion/reassembly, geometry reuse, motion/pause render-loop stopping, quality settings, projects, dialogs, skills, contact drafting, printing, recruiter mode, responsive widths, touch emulation, no-JavaScript content, and missing-asset/WebGL fallbacks.
-
-`tests/reactor_recon.py` captures the actual boot phases and visual layouts. Outputs are in `test-results/iron/`. Browser emulation is not a physical-device certification. Real email delivery still depends on a configured backend.
-
-## Source map
-
-- `src/profile.ts` — editable profile data.
-- `src/reactorModel.ts` — procedural reactor geometry and materials.
-- `src/ReactorScene.tsx` — shared renderer, boot timeline, inspection, background, and lifecycle.
-- `src/CinematicIntro.tsx` — intro chapters and accessible skip control.
-- `src/ReactorControls.tsx` — power, inspection, pulse, and replay controls.
-- `src/EnergyConnections.tsx` — geometry attached to actual hero elements.
-- `src/MotionSettings.tsx` — motion, audio, and quality controls.
-- `src/ProjectDetails.tsx` — shareable project details.
-- `src/ResumeView.tsx` — professional and printable resume.
-- `src/components.tsx` — shared dialog, arc emblem, artwork, SVG fallback, and scene error boundary.
-- `src/styles.css` — visual tokens, responsive layout, interactions, and print styles.
-- `public/fonts/` — self-hosted fonts and licenses.
-
-The site is a personal themed portfolio; it has not been published automatically.
+See `docs/QUALITY-REPORT.md` for the PDF criteria, evidence, and human-review limits. See `docs/DESIGN-REFERENCES.md` for references. Browser screenshots are in `test-results/field-notes/` (ignored by Git).

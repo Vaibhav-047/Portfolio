@@ -15,6 +15,7 @@ import EnergyConnections from './EnergyConnections';
 import ResumeView from './ResumeView';
 import MotionSettings from './MotionSettings';
 import ProjectDetails from './ProjectDetails';
+import FreefallStory from './FreefallStory';
 export type MotionMode = 'full' | 'reduced' | 'off';
 const nav = ['About', 'Experience', 'Projects', 'Skills', 'Resume', 'Contact'];
 const skillNames = profile.skillGroups.flatMap(g => g.skills);
@@ -76,7 +77,7 @@ export default function App() {
     syncUrl(); window.addEventListener('popstate', syncUrl);
     let firstVisit = true;
     try { firstVisit = !sessionStorage.getItem('arc-boot-v1'); sessionStorage.setItem('arc-boot-v1', 'true'); } catch {}
-    if (firstVisit && !media.matches && (!saved || saved === 'full') && !location.search && !location.hash) { setIntro(true); }
+    // The freefall is controlled by native scrolling; it never locks the page behind an intro.
     const load = setTimeout(() => setSceneReady(true), 300);
     return () => { media.removeEventListener('change', syncSystem); window.removeEventListener('popstate', syncUrl); clearTimeout(load); };
   }, []);
@@ -218,7 +219,6 @@ export default function App() {
   }
 
   return <div ref={root} className={`site ${recruiter ? 'recruiter-mode' : ''} ${intro ? 'intro-active' : ''}`} onPointerMove={pointerMove} onPointerDown={ripple} onPointerLeave={() => { if (halo.current) halo.current.style.opacity = '0'; }}>
-    {sceneReady && !recruiter && <SceneBoundary onError={() => setIntro(false)}><Suspense fallback={null}><ReactorScene mode={mode} paused={paused} power={power} exploded={exploded} pulse={pulse} reset={resetView} rotation={rotation} quality={quality} boot={intro} run={cinematicRun} onPhase={setBootPhase} onComplete={() => setIntro(false)} onFailure={() => setIntro(false)}/></Suspense></SceneBoundary>}
     <a className="skip-link" href="#main">Skip to content</a>
     <div className="reading-progress" ref={progress} aria-hidden="true"/>
     <div ref={halo} className="cursor-halo" aria-hidden="true"/>
@@ -229,7 +229,8 @@ export default function App() {
     </header>
 
     <main id="main" className="site-main" inert={intro}>
-      <section id="home" className="hero" data-visible="true">
+      {!recruiter && <FreefallStory mode={mode} paused={paused} quality={quality}/>}
+      {false && <section id="legacy-hero" className="hero" data-visible="true">
         <div className="workshop-grid" aria-hidden="true"/><div className="armor-wash" aria-hidden="true"/><div className="hero-system-label" aria-hidden="true">MK.047 / PERSONAL INTERFACE</div>
         <div className="pointer-trail" aria-hidden="true"/>
         <EnergyConnections active={mode === 'full' && !paused && (!intro || bootPhase >= 3)} pulse={pulse} trackLayout={intro}/><div className="hero-main container">
@@ -253,7 +254,7 @@ export default function App() {
         </div>
         <div className="hero-bottom container"><a href="#about" className="scroll-cue"><span><ArrowDown size={15}/></span>SCROLL TO EXPLORE</a><div className="hero-location"><MapPin size={13}/>{profile.location}<span className="separator">/</span>AVAILABLE WORLDWIDE</div><span className="hero-edition">PORTFOLIO — 2026</span></div>
         
-      </section>
+      </section>}
 
       <div className="stack-strip" aria-label="Technology stack"><div className="container"><span className="tiny-label">TOOLS OF THE TRADE</span><div>{skillNames.map(s => <span key={s}><i/> {s}</span>)}</div><Code2 size={20}/></div></div>
 

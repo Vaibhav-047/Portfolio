@@ -1,0 +1,97 @@
+{
+  "name": "Vaibhav Tripathi",
+  "role": "Frontend Developer",
+  "location": "Pune, India",
+  "availability": "Available for freelance",
+  "email": "raunaktripathi047@gmail.com",
+  "github": "https://github.com/Vaibhav-047",
+  "bio": "Hi, I’m Vaibhav from Pune, India. I’m a frontend developer, and I like listening to music.",
+  "introduction": "I make good frontend for people willing to pay.",
+  "experience": {
+    "role": "Freelance Frontend Developer",
+    "company": "Independent",
+    "duration": "3 years",
+    "summary": "Three years of freelance experience, working on premium projects for a range of clients."
+  },
+  "skills": [
+    {
+      "name": "HTML",
+      "group": "Frontend",
+      "note": "Structure & semantics"
+    },
+    {
+      "name": "CSS",
+      "group": "Frontend",
+      "note": "Layout & visual expression"
+    },
+    {
+      "name": "JavaScript",
+      "group": "Frontend",
+      "note": "Interaction & behavior"
+    },
+    {
+      "name": "Python",
+      "group": "Programming",
+      "note": "Programming & problem-solving"
+    },
+    {
+      "name": "Rust",
+      "group": "Programming",
+      "note": "Systems programming"
+    }
+  ],
+  "education": {
+    "degree": "B.Tech. Computer Science & Engineering",
+    "specialization": "Artificial Intelligence & Machine Learning"
+  },
+  "certification": "Python Course Completion",
+  "projects": [
+    {
+      "id": "personal-computer",
+      "name": "Personal Computer",
+      "category": "Web",
+      "status": "You’re exploring it",
+      "description": "A playful 3D desk that opens into an interactive portfolio desktop.",
+      "problem": "Make an expressive portfolio easy to navigate, credible, and simple to update.",
+      "contribution": "I directed the portfolio’s creative direction and content, collaborating with an AI coding assistant on implementation.",
+      "approach": "A procedural Three.js computer, a scroll-driven journey through its screen, keyboard-accessible desktop apps, project dialogs, and a public Quality Lab. Content lives in one JSON file.",
+      "outcome": "A working local portfolio and an editable Quality Lab. Browser-test evidence is documented in the project’s quality report; publication and peer review are separate steps.",
+      "technologies": [
+        "React",
+        "TypeScript",
+        "CSS",
+        "GSAP"
+      ],
+      "url": null,
+      "source": null
+    },
+    {
+      "id": "supremo-ai",
+      "name": "Supremo AI",
+      "category": "AI",
+      "status": "Details unpublished",
+      "description": "A project from my portfolio. Its scope and my contribution have not been published here.",
+      "problem": null,
+      "contribution": null,
+      "approach": null,
+      "outcome": null,
+      "technologies": [],
+      "url": null,
+      "source": null
+    },
+    {
+      "id": "khoj-ai",
+      "name": "Khoj AI",
+      "category": "AI",
+      "status": "Details unpublished",
+      "description": "A project from my portfolio. Its scope and my contribution have not been published here.",
+      "problem": null,
+      "contribution": null,
+      "approach": null,
+      "outcome": null,
+      "technologies": [],
+      "url": null,
+      "source": null
+    }
+  ]
+}
