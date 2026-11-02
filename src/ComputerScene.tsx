@@ -93,7 +93,7 @@ export default function ComputerScene({ reduced, paused, onReady, onFail, onEnte
    ctx.fillStyle = '#4261b2'; ctx.fillRect(0, 0, 1024, 768);
    ctx.strokeStyle = '#7894d366'; ctx.lineWidth = 1; for (let i = 0; i < 1024; i += 40) { ctx.beginPath();ctx.moveTo(i, 0);ctx.lineTo(i, 768);ctx.stroke(); } for (let i = 0; i < 768; i += 40) {ctx.beginPath();ctx.moveTo(0, i);ctx.lineTo(1024, i);ctx.stroke();}
    ctx.fillStyle = '#e8ebf5'; ctx.fillRect(0, 0, 1024, 55); ctx.fillStyle = '#213358'; ctx.font = 'bold 22px monospace'; ctx.fillText('VT / PERSONAL COMPUTER', 22, 36); ctx.font = '18px monospace'; ctx.fillText('SYSTEM READY', 835, 35);
-   const icons = [['ABOUT', 58, 105], ['PROJECTS', 58, 255], ['QUALITY LAB', 58, 405]] as const;
+   const icons = [['ABOUT', 58, 105], ['PROJECTS', 58, 255], ['CONTACT', 58, 405]] as const;
    icons.forEach(([name, x, y]) => { ctx.fillStyle = '#ffe49d';ctx.fillRect(x, y, 64, 47);ctx.fillRect(x, y - 9, 30, 10);ctx.fillStyle = '#eaf1ff';ctx.font = '17px monospace';ctx.fillText(name, x - 5, y + 80); });
    ctx.fillStyle = '#172b57'; ctx.fillRect(254, 166, 686, 399);ctx.fillStyle = '#f4f1e5'; ctx.fillRect(240, 150, 686, 399);ctx.fillStyle = '#d2dcf5';ctx.fillRect(240, 150, 686, 40);ctx.fillStyle = '#23335a';ctx.font = '18px monospace';ctx.fillText('welcome.txt', 260, 177);ctx.fillText('−  □  ×', 824, 177);
    ctx.fillStyle = '#26365b';ctx.font = 'bold 62px sans-serif';ctx.fillText('Hello, world.', 282, 290);ctx.font = '26px sans-serif';ctx.fillText('I’m Vaibhav Tripathi.', 284, 345);ctx.font = '23px monospace';ctx.fillText('FRONTEND DEVELOPER', 284, 389);
