@@ -36,7 +36,7 @@ function CardVine({ flip = false }: { flip?: boolean }) {
   return <svg className={`card-vine ${flip ? 'flip' : ''}`} viewBox="0 0 240 200" aria-hidden="true">
     <path className="stem" pathLength={1} d="M236 6C180 2 120 14 70 10 36 8 14 22 8 52c-6 30 4 60 0 96-2 20-6 34-2 48" />
     {[[188, 6, -30], [122, 12, 20], [62, 10, -10], [14, 40, 60], [6, 92, 110], [4, 150, 70]].map(([x, y, r], i) =>
-      <path key={i} className="vine-leaf" style={{ '--i': i, transformOrigin: `${x}px ${y}px` } as CSSProperties} d={`M${x} ${y}c6-10 18-12 22-4-6 10-16 10-22 4Z`} transform={`rotate(${r} ${x} ${y})`} />)}
+      <g key={i} transform={`translate(${x} ${y}) rotate(${r})`}><path className="vine-leaf" style={{ '--i': i } as CSSProperties} d="M0 0c6-10 18-12 22-4-6 10-16 10-22 4Z" /></g>)}
   </svg>;
 }
 
@@ -92,7 +92,9 @@ export default function PortfolioTree() {
   const leafCanvas = useRef<HTMLCanvasElement>(null), uiLeaves = useRef<ReturnType<typeof createUiLeaves> | null>(null), ambience = useRef<Ambience | null>(null);
   const tooltip = useRef<HTMLDivElement>(null), copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduced = motion === 'reduced';
-  const loaded = ready || failed;
+  const [sprouted, setSprouted] = useState(false);
+  const loaded = (ready || failed) && sprouted;
+  useEffect(() => { const t = setTimeout(() => setSprouted(true), 1700); return () => clearTimeout(t); }, []); // let the sapling finish growing
 
   useEffect(() => {
     document.documentElement.dataset.motion = motion;
@@ -128,6 +130,10 @@ export default function PortfolioTree() {
   // The 3D scene is decoration: lazy-loaded, and the page works without it.
   useEffect(() => {
     let dead = false, handle: TreeHandle | undefined;
+    // No WebGL2: keep the painted-sky fallback and skip loading three.js at all (and its console errors).
+    const probe = document.createElement('canvas').getContext('webgl2');
+    if (!probe) { setFailed(true); return; }
+    probe.getExtension('WEBGL_lose_context')?.loseContext();
     import('./tree/scene').then(module => {
       if (dead || !canvas.current) return;
       try {

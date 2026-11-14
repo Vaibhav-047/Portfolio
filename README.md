@@ -35,3 +35,13 @@ Earlier implementations (`App.tsx`, reactor, freefall, manga, dragon pages) are 
 | Branch 5 | Contact | Firefly jar, dusk |
 | Hollow | Resume (printable) | Glowing hollow in the trunk |
 | Canopy | Outro | Night sky |
+
+## Quality, motion and accessibility
+
+- **Tiers.** `high` (post-processing with bloom, god rays and depth of field, 4.2k leaves, 9k grass blades), `medium` (no depth of field, fewer leaves and grass), `low` (no post-processing or shadows, DPR 1). Phones and small touch screens start on `low`; machines with ≤4 cores or ≤4 GB report `medium`. If frames stay slower than ~42fps for a few seconds the scene steps down on its own. Force a tier with `?quality=high|medium|low`.
+- **Calm mode.** Follows `prefers-reduced-motion`, or the "Motion on" button. Content stacks normally, there's no smooth scroll, no falling leaves, no custom cursor, and the tree is a single still golden-hour view rendered once.
+- **No WebGL.** The page keeps a painted dawn-to-night sky and all content; three.js is never downloaded.
+- **Content is DOM.** Every section, link and button is real HTML in reading order, reachable by keyboard, with a skip link. The canvas is `aria-hidden` and only decorates or offers shortcuts (clicking a 3D object scrolls to its section or opens its project).
+- **Sound** is off by default and generated in the browser (no audio files).
+
+`npm run test:e2e` (Python Playwright) checks content, deep links, dialog focus return, the clipboard button, Tab reach to every content control, calm mode, console errors, and horizontal overflow at 375, 768 and 1440px.

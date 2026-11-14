@@ -99,13 +99,14 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
     opts.onTier?.(tier);
   }
 
-  let idle = false, lastScroll = -1;
+  let idle = false;
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.05); frames++;
     const animate = !paused && !opts.reduced;
     if (animate) time += dt;
     // Camera: scroll → spline, softened once more so wheel ticks never jolt it.
-    const raw = scrollProgress(), prev = progress;
+    // Calm mode: one still, wide golden-hour view of the whole tree; nothing follows the scroll.
+    const raw = opts.reduced ? 1 : scrollProgress(), prev = progress;
     progress += (raw - progress) * (opts.reduced ? 1 : 1 - Math.exp(-dt * 5));
     velocity += ((progress - prev) / Math.max(dt, 1e-3) - velocity) * 0.15;
     path.sample(progress, stops, shot);
@@ -152,7 +153,7 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
       if (g) atmosphere.groundPointer.value.copy(g);
     } else { windUniforms.uPointerStrength.value *= 0.9; atmosphere.groundPointerOn.value *= 0.9; }
     // Time of day follows the climb: dawn at the roots, night in the canopy.
-    atmosphere.update(shot.seg + shot.s, dt, time, sun, hemi, focusPoint, opts.reduced ? null : pointerWorld, pxPerUnit);
+    atmosphere.update(opts.reduced ? 3.6 : shot.seg + shot.s, dt, time, sun, hemi, focusPoint, opts.reduced ? null : pointerWorld, pxPerUnit);
     const day = atmosphere.day;
 
     wind += ((opts.reduced ? 0 : 1 + Math.min(Math.abs(velocity) * 7, 2.2)) - wind) * (1 - Math.exp(-dt * 2));
@@ -180,10 +181,10 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
   }
 
   renderer.setAnimationLoop(() => {
-    if (opts.reduced) { if (idle && scrollY === lastScroll) return; lastScroll = scrollY; }
+    if (opts.reduced && idle) return;
     frame();
   });
-  const wake = () => { idle = false; lastScroll = -1; };
+  const wake = () => { idle = false; };
   addEventListener('resize', wake);
   if (import.meta.env.DEV) Object.assign(window, { __tree: { camera, scene, objects, tree, windUniforms, falling, renderer, get tier() { return tier; } } });
   requestAnimationFrame(() => opts.onReady());
