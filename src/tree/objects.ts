@@ -110,14 +110,13 @@ export function buildObjects(tree: Tree) {
 
   // Resume: a glowing hollow in the upper trunk
   {
-    const h = 11.5, t = tree.heightT(h), p = tree.trunkCurve.getPointAt(t), az = 0.85 + 5 * 2.4;
-    const out = new THREE.Vector3(Math.cos(az), 0, Math.sin(az)), r = tree.trunkRadius(t);
+    const out = tree.hollow.out;
     const g = new THREE.Group();
     const hole = new THREE.Mesh(keep(new THREE.CircleGeometry(0.3, 24)), keep(new THREE.MeshBasicMaterial({ color: '#0c0703' }))); hole.scale.set(1, 1.5, 1);
     const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.3, 0.07, 8, 28)), darkMat); rim.scale.set(1, 1.5, 1);
     const scroll = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.075, 0.075, 0.4, 14)), glowMat('#fff3cf', '#ffc867', 3)); scroll.rotation.z = Math.PI / 2; scroll.position.z = 0.04;
     g.add(hole, rim, scroll);
-    g.position.copy(p).addScaledVector(out, r * 0.92); g.lookAt(g.position.clone().add(out));
+    g.position.copy(tree.hollow.pos); g.lookAt(g.position.clone().add(out));
     root.add(g); tag(g, { label: 'Resume · open the hollow', id: 'resume' });
     items.push({ pivot: g, body: g, phase: 0, swing: 0, hover: 0, spring: 1, vel: 0, section: 5 });
   }
@@ -148,7 +147,7 @@ export function buildObjects(tree: Tree) {
         if (it.swing) { it.pivot.rotation.z = Math.sin(time * 1.3 + it.phase) * 0.07 * wind * it.swing; it.pivot.rotation.x = Math.sin(time * 0.9 + it.phase * 2) * 0.05 * wind * it.swing; }
       });
       jarBugs.forEach((b, k) => b.position.set(Math.sin(time * 1.7 + k * 2.3) * 0.12, Math.sin(time * 2.3 + k) * 0.17, Math.cos(time * 1.3 + k * 1.7) * 0.12));
-      glow.forEach(g => { g.mat.emissiveIntensity = g.base * (0.55 + night * 1.25); });
+      glow.forEach(g => { g.mat.emissiveIntensity = g.base * (0.55 + night * 0.95); });
     },
     pulse(obj: THREE.Object3D) { items.forEach(it => { let hit = false; it.body.traverse(o => { if (o === obj) hit = true; }); if (hit) it.vel -= 6; }); },
     dispose() { disposables.forEach(d => d.dispose()); },

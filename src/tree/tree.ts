@@ -169,13 +169,19 @@ export function buildTree(leafBudget: number, castShadow: boolean) {
   leaves.castShadow = castShadow; leaves.receiveShadow = true;
   const flexArr = new Float32Array(count), leafSection = new Int8Array(count);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), twist = new THREE.Quaternion(), s = new THREE.Vector3(), col = new THREE.Color(), up = v(0, 1, 0), out = new THREE.Vector3(), pos = new THREE.Vector3();
+  // The resume hollow in the upper trunk, with a clearing in the foliage so it can be seen from outside.
+  const hollowT = heightT(11.5), hollowAz = 0.85 + 5 * 2.4, hollowOut = v(Math.cos(hollowAz), 0, Math.sin(hollowAz));
+  const hollowPos = trunkCurve.getPointAt(hollowT).addScaledVector(hollowOut, trunkRadius(hollowT) * 0.92);
+  const clearEnd = hollowPos.clone().addScaledVector(hollowOut, 7).add(v(0, 0.6, 0)), clearSeg = new THREE.Line3(hollowPos, clearEnd), onSeg = new THREE.Vector3();
+  const inClearing = (p: THREE.Vector3) => p.distanceTo(clearSeg.closestPointToPoint(p, true, onSeg)) < 1.9;
   let k = 0;
   clumps.forEach((c, ci) => {
     const palette = c.section >= 0 ? SEASONS[c.section] : FILLER;
-    for (let i = 0; i < counts[ci]; i++, k++) {
+    for (let i = 0; i < counts[ci]; i++) {
       out.set(R() * 2 - 1, R() * 2 - 1, R() * 2 - 1).normalize();
       const depth = 0.5 + 0.5 * Math.sqrt(R());
       pos.copy(c.center).addScaledVector(out, c.radius * depth); pos.y = c.center.y + (pos.y - c.center.y) * 0.72;
+      if (inClearing(pos)) continue;
       out.y += 0.35; out.normalize();
       q.setFromUnitVectors(up, out); twist.setFromAxisAngle(up, R() * Math.PI * 2); q.multiply(twist);
       const sc = 0.75 + R() * 0.55 * depth; s.set(sc, sc, sc);
@@ -183,9 +189,10 @@ export function buildTree(leafBudget: number, castShadow: boolean) {
       // outer leaves catch more light; a pinch of each palette's accent
       col.set(palette[Math.floor(R() * palette.length)]).multiplyScalar(0.78 + depth * 0.32);
       leaves.setColorAt(k, col);
-      flexArr[k] = c.flex + 0.18 * depth; leafSection[k] = c.section;
+      flexArr[k] = c.flex + 0.18 * depth; leafSection[k] = c.section; k++;
     }
   });
+  leaves.count = k;
   leafGeo.setAttribute('aFlex', new THREE.InstancedBufferAttribute(flexArr, 1));
   leaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
@@ -198,6 +205,6 @@ export function buildTree(leafBudget: number, castShadow: boolean) {
     }
   });
 
-  return { bark, leaves, leafSection, sections, segments, trunkCurve, heightT, trunkRadius, clumps };
+  return { bark, leaves, leafSection, sections, segments, trunkCurve, heightT, trunkRadius, clumps, hollow: { pos: hollowPos, out: hollowOut } };
 }
 export type Tree = ReturnType<typeof buildTree>;

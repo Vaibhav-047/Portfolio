@@ -20,10 +20,10 @@ export function createCameraPath(tree: Tree, resumeFocus: THREE.Vector3) {
     const a0 = first.az + 0.35;
     stops.push({ pos: cyl(a0, 12.5 + back, 0.75), target: new THREE.Vector3(0, 3.4, 0), shift: portrait ? new THREE.Vector2(0, -0.06) : new THREE.Vector2(0.17, 0), angle: a0, radius: 12.5 + back });
     tree.sections.forEach((s, i) => {
-      const fr = Math.hypot(s.focus.x, s.focus.z), angle = s.az + 0.82, radius = fr + 5.8 + i * 0.55 + back;
+      const fr = Math.hypot(s.focus.x, s.focus.z), angle = s.az + 0.82, radius = fr + 5.8 + i * 0.75 + back;
       stops.push({ pos: cyl(angle, radius, s.focus.y + 0.6 + i * 0.25), target: s.focus.clone(), shift: shift(SHIFT_X[i + 1]), angle, radius });
     });
-    const ra = Math.atan2(resumeFocus.z, resumeFocus.x) + 0.32, rr = Math.hypot(resumeFocus.x, resumeFocus.z) + 3.8 + back;
+    const ra = Math.atan2(resumeFocus.z, resumeFocus.x) + 0.18, rr = Math.hypot(resumeFocus.x, resumeFocus.z) + 4.6 + back;
     stops.push({ pos: cyl(ra, rr, resumeFocus.y + 0.35), target: resumeFocus.clone(), shift: shift(SHIFT_X[6]), angle: ra, radius: rr });
     const ca = ra + 0.9;
     stops.push({ pos: cyl(ca, 31 + back * 2, 12.5), target: new THREE.Vector3(0, 9.2, 0), shift: new THREE.Vector2(0, portrait ? -0.05 : 0), angle: ca, radius: 31 + back * 2 });
