@@ -6,8 +6,10 @@ import { buildTree } from './tree';
 import { buildObjects } from './objects';
 import { windUniforms } from './wind';
 import { createCameraPath } from './camera';
+import { createFallingLeaves, createSparkles } from './fallingLeaves';
+import { leafGeometry } from './tree';
 
-export type TreeOptions = { reduced: boolean; onReady: () => void; onHover: (label: string | null) => void; onSelect: (id: string) => void };
+export type TreeOptions = { reduced: boolean; onReady: () => void; onHover: (label: string | null) => void; onSelect: (id: string) => void; onBurst?: () => void };
 export type TreeHandle = { setStops: (stops: number[]) => void; setPaused: (paused: boolean) => void; burst: () => void; dispose: () => void };
 
 const ZERO2 = new THREE.Vector2();
@@ -49,6 +51,11 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
   scene.add(tree.bark, tree.leaves);
   const objects = buildObjects(tree);
   scene.add(objects.root);
+  const falling = createFallingLeaves(tree, opts.reduced ? 1 : q.falling), sparkles = createSparkles(180);
+  scene.add(falling.mesh, sparkles.points);
+  // The leaf the camera follows between branches.
+  const heroLeaf = new THREE.Mesh(leafGeometry(), new THREE.MeshStandardMaterial({ color: '#f0b54a', emissive: '#ff9a2e', emissiveIntensity: 0.35, roughness: 0.6, side: THREE.DoubleSide }));
+  heroLeaf.visible = false; scene.add(heroLeaf);
 
   // Pointer → hover/select on content objects, and a world point that pushes leaves aside.
   const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(9, 9);
@@ -71,7 +78,16 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
   }
   resize(); addEventListener('resize', resize);
   const clock = new THREE.Clock();
-  let time = 0, progress = scrollProgress(), velocity = 0;
+  let time = 0, progress = scrollProgress(), velocity = 0, wind = 1, detachBudget = 0, prevSeg = -1, prevS = 0;
+  const heroPos = new THREE.Vector3(), upV = new THREE.Vector3(0, 1, 0);
+  /** Stop index → section whose leaves fall there (roots catch About's leaves; the hollow sits in the crown). */
+  const stopSection = (k: number) => (k <= 0 ? 0 : k <= 5 ? k - 1 : -1);
+  function burst(k: number) {
+    if (opts.reduced) return;
+    const n = Math.round(q.falling * 0.16);
+    for (let i = 0; i < n; i++) falling.detach(stopSection(k), 1.4 + Math.random());
+    opts.onBurst?.();
+  }
   const focusPoint = new THREE.Vector3(), shot = { pos: new THREE.Vector3(), target: new THREE.Vector3(), shift: new THREE.Vector2(), seg: 0, s: 0 };
   const shift = new THREE.Vector2(), look = new THREE.Vector3(), parallax = new THREE.Vector2(), right = new THREE.Vector3();
   function frame() {
@@ -87,6 +103,22 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
     camera.position.copy(shot.pos).addScaledVector(right, parallax.x * 0.35);
     camera.position.y += parallax.y * 0.2 + Math.sin(time * 0.35) * 0.08;
     if (opts.reduced) look.copy(shot.target); else look.lerp(shot.target, look.lengthSq() ? 0.2 : 1);
+    // Leaf burst as the camera leaves a branch (either direction).
+    if (prevSeg === shot.seg && !opts.reduced) {
+      if (prevS < 0.02 && shot.s >= 0.02) burst(shot.seg);
+      else if (prevS > 0.98 && shot.s <= 0.98) burst(shot.seg + 1);
+    }
+    prevSeg = shot.seg; prevS = shot.s;
+    // Hero leaf: drifts down across the line of sight mid-transition; the camera's gaze follows it.
+    const bell = opts.reduced || shot.seg >= stops.length - 2 ? 0 : Math.sin(Math.PI * shot.s);
+    heroLeaf.visible = bell > 0.02;
+    if (heroLeaf.visible) {
+      heroPos.copy(camera.position).lerp(shot.target, 0.5).addScaledVector(right, Math.sin(time * 1.6) * 0.45 + (shot.s - 0.5) * 1.2).addScaledVector(upV, (0.5 - shot.s) * 1.4 + Math.cos(time * 2.1) * 0.2);
+      heroLeaf.position.copy(heroPos);
+      heroLeaf.rotation.set(Math.cos(time * 1.3) * 0.8, time * 0.9, Math.sin(time * 2.2) * 0.9);
+      heroLeaf.scale.setScalar(bell * 1.5);
+      look.lerp(heroPos, bell * 0.3);
+    }
     focusPoint.copy(look);
     windUniforms.uFocus.value.copy(look);
     // tunnel only while visiting a branch, not at the roots or the wide canopy shot
@@ -97,7 +129,8 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
     camera.setViewOffset(innerWidth, innerHeight, -shift.x * innerWidth, shift.y * innerHeight, innerWidth, innerHeight);
 
     windUniforms.uTime.value = time;
-    windUniforms.uWind.value = opts.reduced ? 0 : 1;
+    wind += ((opts.reduced ? 0 : 1 + Math.min(Math.abs(velocity) * 7, 2.2)) - wind) * (1 - Math.exp(-dt * 2));
+    windUniforms.uWind.value = wind;
     windUniforms.uSunDirView.value.copy(sun.position).sub(sun.target.position).normalize().transformDirection(camera.matrixWorldInverse);
 
     let hit: THREE.Object3D | null = null;
@@ -109,24 +142,31 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
       windUniforms.uPointerStrength.value += (1 - windUniforms.uPointerStrength.value) * 0.1;
     } else windUniforms.uPointerStrength.value *= 0.9;
     if (hit !== hovered) { hovered = hit; objects.setHovered(hit); opts.onHover(hit ? hit.userData.label : null); canvas.style.cursor = hit ? 'pointer' : ''; document.body.classList.toggle('over-object', !!hit); }
-    objects.update(time, dt, opts.reduced ? 0 : 1, 0);
-    void velocity;
+    objects.update(time, dt, wind, 0);
+    if (!opts.reduced && !paused) {
+      // More leaves let go when the visitor scrolls fast.
+      detachBudget += dt * (0.9 + Math.min(Math.abs(velocity) * 90, 26));
+      const near = stopSection(shot.s < 0.5 ? shot.seg : shot.seg + 1);
+      while (detachBudget > 1) { detachBudget -= 1; falling.detach(Math.random() < 0.7 ? near : -2); }
+      for (const at of falling.update(dt, time, wind, windUniforms.uPointer.value, pointerActive)) sparkles.spawn(at, 4);
+      sparkles.update(dt, renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)));
+    }
     renderer.render(scene, camera);
   }
   renderer.setAnimationLoop(frame);
-  if (import.meta.env.DEV) Object.assign(window, { __tree: { camera, scene, objects, tree, windUniforms } });
+  if (import.meta.env.DEV) Object.assign(window, { __tree: { camera, scene, objects, tree, windUniforms, falling, renderer } });
   requestAnimationFrame(() => opts.onReady());
 
   return {
     setStops: s => { stops = s; },
     setPaused: v => { paused = v; },
-    burst: () => {},
+    burst: () => burst(prevSeg + (prevS > 0.5 ? 1 : 0)),
     dispose: () => {
       renderer.setAnimationLoop(null);
       removeEventListener('resize', resize); removeEventListener('pointermove', onMove); document.removeEventListener('pointerleave', onLeave); removeEventListener('click', onClick);
       document.body.classList.remove('over-object');
       scene.traverse(o => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); const mat = m.material as THREE.Material | THREE.Material[] | undefined; if (Array.isArray(mat)) mat.forEach(x => x.dispose()); else mat?.dispose(); });
-      objects.dispose(); renderer.dispose();
+      objects.dispose(); falling.dispose(); sparkles.dispose(); renderer.dispose();
     },
   };
 }

@@ -9,6 +9,7 @@ import { Dialog } from './components';
 import { SECTIONS, measureStops, scrollProgress } from './tree/sections';
 import type { SectionId } from './tree/sections';
 import type { TreeHandle } from './tree/scene';
+import { createUiLeaves } from './ui/uiLeaves';
 
 gsap.registerPlugin(ScrollTrigger);
 type Project = typeof content.projects[number];
@@ -37,6 +38,7 @@ export default function PortfolioTree() {
   const [copied, setCopied] = useState(false), [copyError, setCopyError] = useState(false);
   const [hover, setHover] = useState<string | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null), scene = useRef<TreeHandle | undefined>(undefined), lenis = useRef<Lenis | null>(null);
+  const leafCanvas = useRef<HTMLCanvasElement>(null), uiLeaves = useRef<ReturnType<typeof createUiLeaves> | null>(null);
   const tooltip = useRef<HTMLDivElement>(null), copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduced = motion === 'reduced';
 
@@ -70,14 +72,24 @@ export default function PortfolioTree() {
     import('./tree/scene').then(module => {
       if (dead || !canvas.current) return;
       try {
-        handle = module.createTreeScene(canvas.current, { reduced, onReady: () => setReady(true), onHover: setHover, onSelect: select });
+        handle = module.createTreeScene(canvas.current, { reduced, onReady: () => setReady(true), onHover: setHover, onSelect: select, onBurst: () => uiLeaves.current?.burst() });
         scene.current = handle; handle.setStops(measureStops());
       } catch { setFailed(true); }
     }).catch(() => setFailed(true));
     return () => { dead = true; handle?.dispose(); scene.current = undefined; };
   }, [reduced]);
 
-  useEffect(() => { scene.current?.setPaused(paused); }, [paused, ready]);
+  useEffect(() => { scene.current?.setPaused(paused); uiLeaves.current?.setPaused(paused); }, [paused, ready]);
+
+  // Foreground leaves that land on cards and the cursor (full motion only).
+  useEffect(() => {
+    if (reduced || !leafCanvas.current) return;
+    const tier = new URLSearchParams(location.search).get('quality');
+    const small = matchMedia('(pointer: coarse)').matches || innerWidth < 700;
+    const layer = createUiLeaves(leafCanvas.current, tier === 'low' || small ? 10 : 30);
+    uiLeaves.current = layer;
+    return () => { layer.dispose(); uiLeaves.current = null; };
+  }, [reduced]);
 
   // Section cards drift in and out with their branch; the active stop drives the nav.
   useEffect(() => {
@@ -151,6 +163,7 @@ export default function PortfolioTree() {
 
   return <div className={`tree-site ${ready ? 'scene-ready' : ''} ${failed ? 'scene-failed' : ''}`}>
     <canvas ref={canvas} className="tree-canvas" aria-hidden="true" />
+    {!reduced && <canvas ref={leafCanvas} className="ui-leaves" aria-hidden="true" />}
     <div ref={tooltip} className={`scene-tooltip ${hover ? 'show' : ''}`} aria-hidden="true">{hover}</div>
     <a className="skip-link" href="#about" onClick={nav('about')}>Skip to content</a>
     <header className="site-header">

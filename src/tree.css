@@ -26,6 +26,7 @@ h1,h2,h3{font-weight:400;margin:0}
 
 .tree-canvas{position:fixed;inset:0;width:100vw;height:100vh;height:100lvh;display:block;z-index:0;opacity:0;transition:opacity 1.4s var(--ease)}
 .scene-ready .tree-canvas{opacity:1}
+.ui-leaves{position:fixed;inset:0;width:100vw;height:100vh;z-index:5;pointer-events:none}
 .scene-failed .tree-canvas{display:none}
 main,.site-header{position:relative;z-index:2}
 

@@ -28,7 +28,7 @@ const NEAR_DISSOLVE = (from: number, to: number, tunnel = false) => /* glsl */`#
     vec3 seg = uFocus - cameraPosition; float h = clamp(dot(vLeafWorld - cameraPosition, seg) / dot(seg, seg), 0.0, 1.0);
     float r = mix(0.6, 1.7, h) * smoothstep(1.0, 0.93, h);
     keep = min(keep, mix(1.0, smoothstep(r * 0.55, r, length(vLeafWorld - cameraPosition - seg * h)), uTunnel));` : ''}
-    if (keep < 1.0 && fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) > keep) discard; }`;
+    if (keep < 1.0 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) > keep) discard; }`;
 
 function trunkRadius(t: number) { return THREE.MathUtils.lerp(1.08, 0.2, Math.pow(t, 0.75)); }
 
