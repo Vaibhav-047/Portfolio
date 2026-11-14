@@ -111,9 +111,12 @@ export default function PortfolioTree() {
       if (project) { setSelected(project); goTo('projects', true); }
       else { setSelected(null); if (SECTIONS.some(s => s.id === id)) goTo(id as SectionId, true); }
     }
-    const timer = setTimeout(hash, 60);
+    // Wait for layout + the browser's own anchor jump, then land on the stop (card centred), not the section top.
+    history.scrollRestoration = 'manual';
+    const run = () => setTimeout(hash, 120);
+    if (document.readyState === 'complete') run(); else addEventListener('load', run, { once: true });
     addEventListener('hashchange', hash);
-    return () => { clearTimeout(timer); removeEventListener('hashchange', hash); };
+    return () => { removeEventListener('load', run); removeEventListener('hashchange', hash); };
   }, []);
 
   useEffect(() => {

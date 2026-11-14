@@ -5,10 +5,12 @@ import type { Tier } from './quality';
 import { buildTree } from './tree';
 import { buildObjects } from './objects';
 import { windUniforms } from './wind';
+import { createCameraPath } from './camera';
 
 export type TreeOptions = { reduced: boolean; onReady: () => void; onHover: (label: string | null) => void; onSelect: (id: string) => void };
 export type TreeHandle = { setStops: (stops: number[]) => void; setPaused: (paused: boolean) => void; burst: () => void; dispose: () => void };
 
+const ZERO2 = new THREE.Vector2();
 export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): TreeHandle {
   const tier: Tier = opts.reduced ? 'medium' : detectTier();
   const q = TIERS[tier];
@@ -61,20 +63,38 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
   document.addEventListener('pointerleave', onLeave);
   addEventListener('click', onClick);
 
-  let stops = [0, 1], paused = false;
-  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  const path = createCameraPath(tree, objects.resumeFocus);
+  let stops = Array.from({ length: 8 }, (_, i) => i / 7), paused = false;
+  function resize() {
+    const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.fov = w / h < 0.85 ? 55 : 42; camera.updateProjectionMatrix(); path.build(w / h);
+  }
   resize(); addEventListener('resize', resize);
   const clock = new THREE.Clock();
-  let time = 0;
-  const focusPoint = new THREE.Vector3();
+  let time = 0, progress = scrollProgress(), velocity = 0;
+  const focusPoint = new THREE.Vector3(), shot = { pos: new THREE.Vector3(), target: new THREE.Vector3(), shift: new THREE.Vector2(), seg: 0, s: 0 };
+  const shift = new THREE.Vector2(), look = new THREE.Vector3(), parallax = new THREE.Vector2(), right = new THREE.Vector3();
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.05);
     if (!paused && !opts.reduced) time += dt;
-    const p = scrollProgress();
-    const a = 0.6 + p * 5.2, r = 15 - p * 2;
-    camera.position.set(Math.cos(a) * r, 2 + p * 13, Math.sin(a) * r);
-    focusPoint.set(0, 3.5 + p * 10, 0);
+    // Camera: scroll → spline, softened once more so wheel ticks never jolt it.
+    const raw = scrollProgress(), prev = progress;
+    progress += (raw - progress) * (opts.reduced ? 1 : 1 - Math.exp(-dt * 5));
+    velocity += ((progress - prev) / Math.max(dt, 1e-3) - velocity) * 0.15;
+    path.sample(progress, stops, shot);
+    parallax.lerp(pointerActive ? ndc : ZERO2, 0.04);
+    right.set(1, 0, 0).applyQuaternion(camera.quaternion);
+    camera.position.copy(shot.pos).addScaledVector(right, parallax.x * 0.35);
+    camera.position.y += parallax.y * 0.2 + Math.sin(time * 0.35) * 0.08;
+    if (opts.reduced) look.copy(shot.target); else look.lerp(shot.target, look.lengthSq() ? 0.2 : 1);
+    focusPoint.copy(look);
+    windUniforms.uFocus.value.copy(look);
+    // tunnel only while visiting a branch, not at the roots or the wide canopy shot
+    const tunnelAt = (k: number) => (k === 0 || k === stops.length - 1 ? 0 : 1);
+    windUniforms.uTunnel.value = THREE.MathUtils.lerp(tunnelAt(shot.seg), tunnelAt(shot.seg + 1), shot.s);
     camera.lookAt(focusPoint);
+    shift.lerp(shot.shift, opts.reduced ? 1 : 0.12);
+    camera.setViewOffset(innerWidth, innerHeight, -shift.x * innerWidth, shift.y * innerHeight, innerWidth, innerHeight);
 
     windUniforms.uTime.value = time;
     windUniforms.uWind.value = opts.reduced ? 0 : 1;
@@ -90,10 +110,11 @@ export function createTreeScene(canvas: HTMLCanvasElement, opts: TreeOptions): T
     } else windUniforms.uPointerStrength.value *= 0.9;
     if (hit !== hovered) { hovered = hit; objects.setHovered(hit); opts.onHover(hit ? hit.userData.label : null); canvas.style.cursor = hit ? 'pointer' : ''; document.body.classList.toggle('over-object', !!hit); }
     objects.update(time, dt, opts.reduced ? 0 : 1, 0);
-    void stops;
+    void velocity;
     renderer.render(scene, camera);
   }
   renderer.setAnimationLoop(frame);
+  if (import.meta.env.DEV) Object.assign(window, { __tree: { camera, scene, objects, tree, windUniforms } });
   requestAnimationFrame(() => opts.onReady());
 
   return {

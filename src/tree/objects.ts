@@ -28,12 +28,12 @@ export function buildObjects(tree: Tree) {
     pivot.position.copy(p).add(new THREE.Vector3(0, -r * 0.8, 0));
     const string = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.009, 0.009, len, 4)), stringMat);
     string.position.y = -len / 2; body.position.y = -len;
-    pivot.add(string, body); root.add(pivot); tag(body, data);
+    body.scale.multiplyScalar(1.3); pivot.add(string, body); root.add(pivot); tag(body, data);
     items.push({ pivot, body, phase: R() * 6, swing: 1, hover: 0, spring: 1, vel: 0, section });
   }
   function perch(section: number, t: number, body: THREE.Object3D, data: Pickable) {
     const { p, r } = surface(section, t), pivot = new THREE.Group();
-    pivot.position.copy(p).add(new THREE.Vector3(0, r * 0.85, 0)); pivot.add(body); root.add(pivot); tag(body, data);
+    pivot.position.copy(p).add(new THREE.Vector3(0, r * 0.85, 0)); body.scale.multiplyScalar(1.3); pivot.add(body); root.add(pivot); tag(body, data);
     items.push({ pivot, body, phase: R() * 6, swing: 0.25, hover: 0, spring: 1, vel: 0, section });
   }
 
@@ -110,12 +110,12 @@ export function buildObjects(tree: Tree) {
 
   // Resume: a glowing hollow in the upper trunk
   {
-    const h = 13.3, t = tree.heightT(h), p = tree.trunkCurve.getPointAt(t), az = 0.85 + 5 * 2.4;
+    const h = 11.5, t = tree.heightT(h), p = tree.trunkCurve.getPointAt(t), az = 0.85 + 5 * 2.4;
     const out = new THREE.Vector3(Math.cos(az), 0, Math.sin(az)), r = tree.trunkRadius(t);
     const g = new THREE.Group();
-    const hole = new THREE.Mesh(keep(new THREE.CircleGeometry(0.2, 24)), keep(new THREE.MeshBasicMaterial({ color: '#0c0703' }))); hole.scale.set(1, 1.5, 1);
-    const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.2, 0.05, 8, 24)), darkMat); rim.scale.set(1, 1.5, 1);
-    const scroll = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.05, 0.26, 12)), glowMat('#fff3cf', '#ffc867', 2.4)); scroll.rotation.z = Math.PI / 2; scroll.position.z = 0.02;
+    const hole = new THREE.Mesh(keep(new THREE.CircleGeometry(0.3, 24)), keep(new THREE.MeshBasicMaterial({ color: '#0c0703' }))); hole.scale.set(1, 1.5, 1);
+    const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.3, 0.07, 8, 28)), darkMat); rim.scale.set(1, 1.5, 1);
+    const scroll = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.075, 0.075, 0.4, 14)), glowMat('#fff3cf', '#ffc867', 3)); scroll.rotation.z = Math.PI / 2; scroll.position.z = 0.04;
     g.add(hole, rim, scroll);
     g.position.copy(p).addScaledVector(out, r * 0.92); g.lookAt(g.position.clone().add(out));
     root.add(g); tag(g, { label: 'Resume · open the hollow', id: 'resume' });

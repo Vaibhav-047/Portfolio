@@ -8,6 +8,8 @@ export const windUniforms = {
   uPointerStrength: { value: 0 },
   uSunDirView: { value: new THREE.Vector3(0, 1, 0) },
   uSunColor: { value: new THREE.Color('#ffd9a0') },
+  uFocus: { value: new THREE.Vector3() },
+  uTunnel: { value: 0 },
 };
 
 export const NOISE_GLSL = /* glsl */`

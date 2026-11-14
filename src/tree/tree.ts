@@ -21,6 +21,15 @@ const SEASONS: string[][] = [
 ];
 const FILLER = ['#5a9a3e', '#6eaa46', '#4c8a36', '#88b950', '#d7b04a', '#e39a52'];
 
+/** Dithered dissolve of geometry right in front of the lens, so the camera can fly through the canopy. */
+const NEAR_DISSOLVE = (from: number, to: number, tunnel = false) => /* glsl */`#include <clipping_planes_fragment>
+  { float keep = smoothstep(${from.toFixed(2)}, ${to.toFixed(2)}, length(vViewPosition));
+    ${tunnel ? `// view tunnel: clear the line of sight from the lens to the focused object
+    vec3 seg = uFocus - cameraPosition; float h = clamp(dot(vLeafWorld - cameraPosition, seg) / dot(seg, seg), 0.0, 1.0);
+    float r = mix(0.6, 1.7, h) * smoothstep(1.0, 0.93, h);
+    keep = min(keep, mix(1.0, smoothstep(r * 0.55, r, length(vLeafWorld - cameraPosition - seg * h)), uTunnel));` : ''}
+    if (keep < 1.0 && fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) > keep) discard; }`;
+
 function trunkRadius(t: number) { return THREE.MathUtils.lerp(1.08, 0.2, Math.pow(t, 0.75)); }
 
 function tube(limb: Limb, radial: number, segs: number) {
@@ -125,6 +134,7 @@ export function buildTree(leafBudget: number, castShadow: boolean) {
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 barkUv; varying vec2 vBarkUv; varying vec3 vWorldN; varying float vWorldY;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec2 vBarkUv; varying vec3 vWorldN; varying float vWorldY;\n${NOISE_GLSL}`)
+      .replace('#include <clipping_planes_fragment>', NEAR_DISSOLVE(0.9, 2.2))
       .replace('#include <color_fragment>', /* glsl */`
         float n = vnoise(vec3(vBarkUv.x*9.0, vBarkUv.y*3.0, 0.0));
         float ridge = smoothstep(0.15, 0.85, abs(sin(vBarkUv.x*6.2831*6.0 + n*3.5 + vBarkUv.y*0.6)));
@@ -145,9 +155,12 @@ export function buildTree(leafBudget: number, castShadow: boolean) {
   const leafMat = new THREE.MeshStandardMaterial({ roughness: 0.72, side: THREE.DoubleSide });
   windify(leafMat, 'aFlex', /* glsl */`
     float ph = dot(instanceMatrix[3].xyz, vec3(12.9898, 78.233, 37.719));
-    wp.xyz += normalize(mat3(instanceMatrix) * vec3(0.0, 0.0, 1.0)) * sin(uTime*7.0 + ph) * 0.05 * position.y * uWind;`, shader => {
+    wp.xyz += normalize(mat3(instanceMatrix) * vec3(0.0, 0.0, 1.0)) * sin(uTime*7.0 + ph) * 0.05 * position.y * uWind;
+    vLeafWorld = wp.xyz;`, shader => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLeafWorld;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uSunDirView; uniform vec3 uSunColor;')
+      .replace('#include <common>', '#include <common>\nuniform vec3 uSunDirView; uniform vec3 uSunColor; uniform vec3 uFocus; uniform float uTunnel; varying vec3 vLeafWorld;')
+      .replace('#include <clipping_planes_fragment>', NEAR_DISSOLVE(1.8, 4.2, true))
       .replace('#include <emissivemap_fragment>', /* glsl */`#include <emissivemap_fragment>
         float backlit = pow(max(dot(-normalize(vViewPosition), uSunDirView), 0.0), 3.0);
         totalEmissiveRadiance += diffuseColor.rgb * uSunColor * (0.12 + backlit * 0.9);`);

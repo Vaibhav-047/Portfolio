@@ -1,9 +1,9 @@
 export type Tier = 'high' | 'medium' | 'low';
 
 export const TIERS = {
-  high: { dpr: 1.5, leaves: 2600, falling: 360, grass: 9000, fireflies: 180, pollen: 500, shadows: true, post: true, dof: true, godrays: true, uiLeaves: 36 },
-  medium: { dpr: 1.25, leaves: 1800, falling: 220, grass: 4500, fireflies: 110, pollen: 260, shadows: true, post: true, dof: false, godrays: true, uiLeaves: 22 },
-  low: { dpr: 1, leaves: 1100, falling: 90, grass: 1400, fireflies: 60, pollen: 90, shadows: false, post: false, dof: false, godrays: false, uiLeaves: 10 },
+  high: { dpr: 1.5, leaves: 4200, falling: 360, grass: 9000, fireflies: 180, pollen: 500, shadows: true, post: true, dof: true, godrays: true, uiLeaves: 36 },
+  medium: { dpr: 1.25, leaves: 2800, falling: 220, grass: 4500, fireflies: 110, pollen: 260, shadows: true, post: true, dof: false, godrays: true, uiLeaves: 22 },
+  low: { dpr: 1, leaves: 1500, falling: 90, grass: 1400, fireflies: 60, pollen: 90, shadows: false, post: false, dof: false, godrays: false, uiLeaves: 10 },
 } satisfies Record<Tier, unknown>;
 export type TierSettings = typeof TIERS[Tier];
 
