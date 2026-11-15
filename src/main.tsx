@@ -1,7 +1,9 @@
-import { createRoot, hydrateRoot } from 'react-dom/client';
-import App from './App';
+import { createRoot } from 'react-dom/client';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
 import './styles.css';
-import './freefall.css';
-const root = document.getElementById('root')!;
-if (root.querySelector('main')) hydrateRoot(root, <App />);
-else createRoot(root).render(<App />);
+import App from './App';
+createRoot(document.getElementById('root')!).render(<App />);
