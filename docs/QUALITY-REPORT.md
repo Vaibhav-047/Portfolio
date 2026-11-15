@@ -1,4 +1,4 @@
-> Historical report for the previous Field Notes version. The current Personal Computer portfolio no longer includes Quality Lab, Rust, JavaScript as a listed skill, or the Personal Computer project. Use the current README and tests/pc_check.py for the active implementation.
+> Historical report for the earlier Field Notes version. Quality Lab, Rust, JavaScript as a listed skill and the old project entry are no longer part of the site. See the current README for the active implementation.
 
 # Portfolio Quality Lab — implementation and evidence
 
