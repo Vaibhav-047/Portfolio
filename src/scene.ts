@@ -49,7 +49,8 @@ const smooth = (a: number, b: number, x: number) => { const t = THREE.MathUtils.
 
 gsap.ticker.lagSmoothing(0);   // a dropped frame must not stretch the journey: keep it on wall-clock time
 
-export async function createScene(canvas: HTMLCanvasElement, tier: Tier): Promise<SceneApi> {
+export async function createScene(canvas: HTMLCanvasElement, tier: Tier, onProgress?: (fraction: number) => void): Promise<SceneApi> {
+  THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => onProgress?.(loaded / total);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: tier !== 'low', powerPreference: 'high-performance' });
   let dpr = Math.min(devicePixelRatio, tier === 'high' ? 1.5 : tier === 'mid' ? 1.25 : 1);
   renderer.setPixelRatio(dpr);
@@ -81,7 +82,10 @@ export async function createScene(canvas: HTMLCanvasElement, tier: Tier): Promis
     camera.aspect = w / h; camera.updateProjectionMatrix(); portrait = w < 760;
     // keep the whole crown (about 24 units wide, 19 tall) in frame at any aspect
     const t = Math.tan(THREE.MathUtils.degToRad(20));
-    view.dist = Math.max(11.6 / t, 13.4 / (t * camera.aspect));
+    view.dist = Math.max(11.6 / t, (portrait ? 11.4 : 13.4) / (t * camera.aspect));
+    // keep the moon upper-left of the crown whatever the aspect
+    const az = -Math.min(0.4, Math.atan(t * camera.aspect) * 0.62), elv = portrait ? 0.2 : 0.34;
+    U.uMoonSky.value.set(Math.sin(az) * Math.cos(elv), Math.sin(elv), -Math.cos(az) * Math.cos(elv));
   }
   const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
 

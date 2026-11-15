@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import gsap from 'gsap';
-import * as THREE from 'three';
 import { ArrowLeft, ArrowUpRight, Check, Copy, Github, Mail } from 'lucide-react';
 import content from './content.json';
-import { createScene, pickTier, type SceneApi } from './scene';
-import { SECTION_IDS, type SectionId } from './tree';
+import type { SceneApi } from './scene';
+import { SECTION_IDS, type SectionId } from './sections';
 
 const LABELS: Record<SectionId, string> = { about: 'About', projects: 'Projects', skills: 'Skills', journey: 'Journey', contact: 'Contact' };
 const params = new URLSearchParams(location.search);
@@ -175,8 +174,8 @@ export default function App() {
 
   useEffect(() => {
     let dead = false;
-    THREE.DefaultLoadingManager.onProgress = (_u, loaded, total) => setProgress(p => Math.max(p, (loaded / total) * 0.9));
-    createScene(canvas.current!, pickTier()).then(async scene => {
+    // the 3D code is its own chunk, so the loader paints before Three.js has even downloaded
+    import('./scene').then(m => m.createScene(canvas.current!, m.pickTier(), f => setProgress(p => Math.max(p, f * 0.9)))).then(async scene => {
       if (dead) return scene.dispose();
       api.current = scene; scene.setLabels(labelEls.current);
       scene.onPick = go;

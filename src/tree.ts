@@ -4,10 +4,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import data from './tree-data.json';
+import type { SectionId } from './sections';
+export type { SectionId };
 
 export type Tier = 'high' | 'mid' | 'low';
-export const SECTION_IDS = ['about', 'projects', 'skills', 'journey', 'contact'] as const;
-export type SectionId = typeof SECTION_IDS[number];
 
 const col = (hex: string) => new THREE.Color(hex);
 export const PAL = {
@@ -23,7 +23,8 @@ export const U = {
   uTime: { value: 0 },
   uFogColor: { value: PAL.fog.clone() },
   uFogDensity: { value: 0.011 },
-  uMoonDir: { value: MOON_DIR },
+  uMoonDir: { value: MOON_DIR },             // where the moonlight comes from
+  uMoonSky: { value: MOON_DIR.clone() },     // where the moon is drawn: nudged per aspect so it stays in frame
   uTeal: { value: PAL.teal },
   uRipple: { value: -1 },   // radius of the light ring spreading over the roots, -1 = off
 };
@@ -132,6 +133,7 @@ function buildLeaves(group: THREE.Group, tier: Tier) {
         c *= (.5 + tx * 1.25) * (.6 + .7 * vShade) * mix(.4, 1.05, smoothstep(.6, 1.05, vAo));
         float under = smoothstep(.15, -.75, n.y);                       // undersides catch the vine light
         c += uTeal * under * .16 * smoothstep(16., 8., vW.y) + uMoonCol * moon * .1;
+        c = mix(c, c * vec3(.55, .95, 1.05), .35) * .84;                 // blue hour: cooler and a touch darker than daylight green
         gl_FragColor = vec4(applyFog(c, vDepth), 1.);
         ${OUT}
       }`,

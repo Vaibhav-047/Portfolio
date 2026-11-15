@@ -1,33 +1,31 @@
-# Vaibhav Tripathi — Personal Computer
+# Vaibhav Tripathi — portfolio
 
-A 3D desk that becomes an interactive portfolio desktop through a scroll-driven trip into the monitor. Built with React, TypeScript, Three.js, and GSAP. No new dependency is needed.
+A world tree in a blue-hour grove. Each section of the portfolio is a glowing vine: choose one and a pulse of light
+races from the roots, round the trunk and out along a branch to a gem, which opens into that section.
+Built with React, TypeScript, Three.js and GSAP.
 
-## Run and verify
+## Run
 
 ```sh
 npm install
-npm run dev -- --host 127.0.0.1 --port 5173
-npx tsc --noEmit
-npm run build
-npm run test:e2e
+npm run dev
+npm run check   # type-check + production build
 ```
-
-Browser tests require Python Playwright and Chromium, with the preview server running. The historical entry filename is `src/manga-main.tsx`; it now loads `src/PersonalComputer.tsx`, `src/ComputerScene.tsx`, and their styles. Earlier implementations are inactive.
 
 ## Edit content
 
-Update `src/content.json` without editing HTML. It contains the bio, experience, skills, education, certification, and project records. Project categories generate the filter buttons automatically. Live and source links are optional and require HTTP(S) URLs. Rebuild and deploy to update a published site for everyone. Update `index.html` too when changing the static no-JavaScript identity/contact summary.
+All text comes from `src/content.json` (bio, experience, skills, education, certification, projects). The `<noscript>`
+summary in `index.html` is separate; update it too.
 
-Current skills: HTML, CSS, Python. Current projects: Supremo AI and Khoj AI. Their case-study details are not published; the site does not invent them. Quality Lab has been removed from navigation, desktop apps, the monitor illustration, routing, and public downloads. The original user PDF in Downloads is untouched.
+## How it is built
 
-## Interactions
+| File | What it holds |
+| --- | --- |
+| `scripts/build_tree.py` | Blender script: rope-twisted trunk, roots, branches, bark grooves and UVs → `public/tree/tree.glb`; vine splines and leaf clumps → `src/tree-data.json`. Rebuild with `npm run tree` (needs Blender). |
+| `src/tree.ts` | Bark material, instanced leaves, vines (flow/pulse shader), gems, wind. |
+| `src/world.ts` | Sky, moon, forest layers, ground, grass, mushrooms, fog, fireflies, pollen, falling leaves, god rays. |
+| `src/scene.ts` | Renderer, quality tiers, bloom / depth of field / grain, picking, the GSAP vine journey. |
+| `src/App.tsx`, `src/styles.css` | Labels, panels, loader, URL hash routing. |
 
-- Pointer-responsive 3D desk, clickable monitor, and scroll-driven camera travel.
-- Desktop apps for About, Projects, Skills, Contact, and Resume.
-- Draggable, centerable, minimized/maximized windows; Start menu and taskbar.
-- Project filters and shareable project dialogs with keyboard focus restoration.
-- Reduced-motion preference, ambient pause, opt-in short interface sound.
-- Lazy-loaded WebGL scene, capped resolution, offscreen/tab rendering pause, and static fallback.
-- Real mailto and clipboard actions; print/save PDF resume. No email backend or external submission is claimed.
-
-The site assumes domain-root deployment with an SPA fallback. No deployment is performed by the local build.
+Quality tier is picked automatically (`?tier=high|mid|low` forces one; `?motion=reduced` forces the reduced-motion path).
+Section links are plain hashes: `#about`, `#projects`, `#skills`, `#journey`, `#contact`.

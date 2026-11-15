@@ -21,7 +21,7 @@ function sky() {
     uniforms: { ...U, cTop: { value: new THREE.Color('#0E2A2E') }, cMid: { value: new THREE.Color('#1F4A4A') }, cHor: { value: new THREE.Color('#A8D8C8') } },
     vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: /* glsl */`
-      uniform vec3 cTop, cMid, cHor, uMoonDir; uniform float uTime; varying vec3 vDir;
+      uniform vec3 cTop, cMid, cHor, uMoonSky; uniform float uTime; varying vec3 vDir;
       float hash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
       ${NOISE}
       void main(){
@@ -34,7 +34,7 @@ function sky() {
         c = mix(c, cHor * .8, smoothstep(.25, .7, cl) * smoothstep(.02, .12, h) * smoothstep(.5, .15, h) * .35);
         vec3 g = floor(d * 190.); float s = hash(g);
         c += vec3(.8, .95, 1.) * step(.9965, s) * smoothstep(.14, .5, h) * (.6 + .4 * sin(uTime * (1. + s * 3.) + s * 40.)) * 1.2;
-        float m = dot(d, uMoonDir);                                                   // crisp disc, soft halo (the halo blooms)
+        float m = dot(d, uMoonSky);                                                   // crisp disc, soft halo (the halo blooms)
         c += vec3(.85, .97, 1.) * (smoothstep(.99978, .99986, m) * 1.5 + pow(max(m, 0.), 900.) * .35 + pow(max(m, 0.), 90.) * .12 + pow(max(m, 0.), 12.) * .05);
         gl_FragColor = vec4(c, 1.);
         ${OUT}
@@ -138,7 +138,7 @@ function mushrooms(group: THREE.Group, tier: Tier) {
   (data.rootTips as number[][]).forEach(([x, , z]) => { const f = rnd(0.55, 0.85); cluster(x * f + rnd(-0.6, 0.6), z * f + rnd(-0.6, 0.6)); });
   for (let k = 0; k < (tier === 'low' ? 8 : 22); k++) { const a = rnd(-0.3, Math.PI + 0.3), r = rnd(9, 26); cluster(Math.cos(a) * r, Math.sin(a) * r); }
   const n = spots.length, o = new THREE.Object3D();
-  const emissive = (s: { fragmentShader: string }) => { s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = vColor.rgb * 1.7;'); };
+  const emissive = (s: { fragmentShader: string }) => { s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = vColor.rgb * 1.15;'); };
   const capGeo = new THREE.SphereGeometry(1, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2); capGeo.scale(1, 0.62, 1);
   const capMat = new THREE.MeshStandardMaterial({ roughness: 0.5 }); capMat.onBeforeCompile = emissive;
   const caps = new THREE.InstancedMesh(capGeo, capMat, n);
@@ -147,7 +147,7 @@ function mushrooms(group: THREE.Group, tier: Tier) {
   const pools = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 16).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { ...U },
     vertexShader: `varying vec2 vUv; varying vec3 vC; void main(){ vUv = uv; vC = instanceColor; gl_Position = projectionMatrix * viewMatrix * instanceMatrix * vec4(position, 1.); }`,
-    fragmentShader: `uniform float uTime; varying vec2 vUv; varying vec3 vC; void main(){ float d = length(vUv - .5) * 2.; gl_FragColor = vec4(vC * pow(max(0., 1. - d), 2.2) * .5, 1.); ${OUT} }`,
+    fragmentShader: `uniform float uTime; varying vec2 vUv; varying vec3 vC; void main(){ float d = length(vUv - .5) * 2.; gl_FragColor = vec4(vC * pow(max(0., 1. - d), 2.2) * .3, 1.); ${OUT} }`,
   }), n);
   const c = new THREE.Color();
   spots.forEach(([x, z, s], i) => {
