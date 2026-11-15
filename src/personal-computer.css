@@ -9,3 +9,13 @@
 @media print{body{background:white!important}.pc-header,.portal-story,.desktop-section,.pc-outro,.pc-skip,.pc-project-dialog{display:none!important}.pc-site{background:none;overflow:visible;color:black}.pc-print-only{display:block}.pc-print-only .pc-resume{padding:20px;font-size:11px;color:black}.pc-resume h3{break-after:avoid}.pc-resume>div{break-inside:avoid}}
 
 .pc-site:not(.desktop-visible) .wallpaper-orbit{animation-play-state:paused}
+
+.folder-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #182b57;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}

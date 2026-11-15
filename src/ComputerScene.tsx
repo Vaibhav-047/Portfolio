@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
-type Props = { reduced: boolean; paused: boolean; onReady: () => void; onFail: () => void; onEnter: () => void };
+type ScreenApp = 'about' | 'projects' | 'contact';
+type Props = { reduced: boolean; paused: boolean; onReady: () => void; onFail: () => void; onEnter: (app: ScreenApp, isFolder: boolean) => void };
 export default function ComputerScene({ reduced, paused, onReady, onFail, onEnter }: Props) {
  const host = useRef<HTMLDivElement>(null);
  const current = useRef({ reduced, paused, onReady, onFail, onEnter });
@@ -59,6 +60,8 @@ export default function ComputerScene({ reduced, paused, onReady, onFail, onEnte
   const screenMaterial = new THREE.MeshBasicMaterial({ map: screenTexture }); materials.push(screenMaterial);
   const screenGeometry = new THREE.PlaneGeometry(2.58, 1.91); geometries.push(screenGeometry);
   const screen = new THREE.Mesh(screenGeometry, screenMaterial); screen.position.set(0, .08, .935); monitor.add(screen);
+  const screenCenter = screen.getWorldPosition(new THREE.Vector3());
+  const viewSlope = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   label(monitor, 'VAIBHAV / 047', 1.05, .17, [-.55, -1.13, .705]);
   const power = cylinder(monitor, .07, .025, [1.1, -1.1, .72], green); power.rotation.x = Math.PI / 2;
   for (let i = 0; i < 10; i++) box(monitor, [.035, .6, .012], [1.64, .1, -.5 + i * .08], edge, .005).rotation.y = Math.PI / 2;
@@ -89,12 +92,16 @@ export default function ComputerScene({ reduced, paused, onReady, onFail, onEnte
   for (let i = 0; i < 18; i++) { const frame = new THREE.Group(); const z = -3 - i * 3; box(frame, [5, .025, .025], [0, 2.1, z], tunnelMat, .001); box(frame, [5, .025, .025], [0, -2.1, z], tunnelMat, .001); box(frame, [.025, 4.2, .025], [-2.5, 0, z], tunnelMat, .001); box(frame, [.025, 4.2, .025], [2.5, 0, z], tunnelMat, .001); frame.rotation.z = i * .09; tunnel.add(frame); }
   let hovered = false, frame = 0, last = 0, elapsed = 0, visible = true, disposed = false, lowFrames = 0, measured = 0;
   const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
+  const icons = [
+   ['about', 'ABOUT', 58, 105],
+   ['projects', 'PROJECTS', 58, 255],
+   ['contact', 'CONTACT', 58, 405],
+  ] as const;
   function paintScreen() {
    ctx.fillStyle = '#4261b2'; ctx.fillRect(0, 0, 1024, 768);
    ctx.strokeStyle = '#7894d366'; ctx.lineWidth = 1; for (let i = 0; i < 1024; i += 40) { ctx.beginPath();ctx.moveTo(i, 0);ctx.lineTo(i, 768);ctx.stroke(); } for (let i = 0; i < 768; i += 40) {ctx.beginPath();ctx.moveTo(0, i);ctx.lineTo(1024, i);ctx.stroke();}
    ctx.fillStyle = '#e8ebf5'; ctx.fillRect(0, 0, 1024, 55); ctx.fillStyle = '#213358'; ctx.font = 'bold 22px monospace'; ctx.fillText('VT / PERSONAL COMPUTER', 22, 36); ctx.font = '18px monospace'; ctx.fillText('SYSTEM READY', 835, 35);
-   const icons = [['ABOUT', 58, 105], ['PROJECTS', 58, 255], ['CONTACT', 58, 405]] as const;
-   icons.forEach(([name, x, y]) => { ctx.fillStyle = '#ffe49d';ctx.fillRect(x, y, 64, 47);ctx.fillRect(x, y - 9, 30, 10);ctx.fillStyle = '#eaf1ff';ctx.font = '17px monospace';ctx.fillText(name, x - 5, y + 80); });
+   icons.forEach(([, name, x, y]) => { ctx.fillStyle = '#ffe49d';ctx.fillRect(x, y, 64, 47);ctx.fillRect(x, y - 9, 30, 10);ctx.fillStyle = '#eaf1ff';ctx.font = '17px monospace';ctx.fillText(name, x - 5, y + 80); });
    ctx.fillStyle = '#172b57'; ctx.fillRect(254, 166, 686, 399);ctx.fillStyle = '#f4f1e5'; ctx.fillRect(240, 150, 686, 399);ctx.fillStyle = '#d2dcf5';ctx.fillRect(240, 150, 686, 40);ctx.fillStyle = '#23335a';ctx.font = '18px monospace';ctx.fillText('welcome.txt', 260, 177);ctx.fillText('−  □  ×', 824, 177);
    ctx.fillStyle = '#26365b';ctx.font = 'bold 62px sans-serif';ctx.fillText('Hello, world.', 282, 290);ctx.font = '26px sans-serif';ctx.fillText('I’m Vaibhav Tripathi.', 284, 345);ctx.font = '23px monospace';ctx.fillText('FRONTEND DEVELOPER', 284, 389);
    ctx.fillStyle = hovered ? '#f2b575' : '#233c70';ctx.fillRect(283, 437, 490, 67);ctx.fillStyle = hovered ? '#26365b' : '#fff';ctx.font = 'bold 21px monospace';ctx.fillText('CLICK TO EXPLORE  →', 330, 480);
@@ -110,9 +117,11 @@ export default function ComputerScene({ reduced, paused, onReady, onFail, onEnte
    const p = current.current.reduced ? 0 : progress(); const mobile = innerWidth < 700;
    const home = new THREE.Vector3(mobile ? 8.5 : 8, mobile ? 6.2 : 5.2, mobile ? 14 : 11);
    const homeTarget = new THREE.Vector3(mobile ? .5 : -1.25, mobile ? 1.15 : 1.3, 0);
-   const approach = THREE.MathUtils.smoothstep(p, .04, .5);
-   camera.position.copy(home).lerp(new THREE.Vector3(.5, 2.56, 2.6), approach);
-   const target = homeTarget.clone().lerp(new THREE.Vector3(.5, 2.56, 0), approach);
+   const approach = THREE.MathUtils.smoothstep(p, .04, .38);
+   const { width, height } = screenGeometry.parameters;
+   const screenDistance = Math.max(width / camera.aspect, height) / (2 * viewSlope * .92);
+   camera.position.copy(home).lerp(new THREE.Vector3(screenCenter.x, screenCenter.y, screenCenter.z + screenDistance), approach);
+   const target = homeTarget.clone().lerp(screenCenter, approach);
    if (!current.current.reduced && !current.current.paused && p < .12) { camera.position.x += pointer.x * .28; camera.position.y += pointer.y * .12; }
    if (p > .5) { const into = (p - .5) / .5; desk.visible = false; plant.visible = false; pot.visible = false; floor.visible = false; grid.visible = false; tunnel.visible = true; scene.background = new THREE.Color('#152c71'); scene.fog = new THREE.Fog('#152c71', 6, 45); camera.position.set(Math.sin(into * 4) * .2, Math.cos(into * 3) * .2, -into * 43);target.set(0, 0, camera.position.z - 8); camera.rotation.z = into * .3; tunnel.rotation.z = into * .4; }
    else { desk.visible = true; plant.visible = true; pot.visible = true; floor.visible = true; grid.visible = true; tunnel.visible = false; scene.background = new THREE.Color('#bcc9ef'); scene.fog = new THREE.Fog('#bcc9ef', 19, 42); }
@@ -124,8 +133,27 @@ export default function ComputerScene({ reduced, paused, onReady, onFail, onEnte
   }
   function requestRender() { cancelAnimationFrame(frame); last = 0; if (visible && !document.hidden) frame = requestAnimationFrame(render); }
   function resize() { renderer.setSize(element.clientWidth, element.clientHeight); camera.aspect = element.clientWidth / Math.max(1, element.clientHeight); camera.updateProjectionMatrix(); requestRender(); }
-  function move(event: PointerEvent) { const rect = element.getBoundingClientRect();pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);raycaster.setFromCamera(pointer, camera);const hit = progress() < .4 && raycaster.intersectObject(screen).length > 0; if (hit !== hovered) {hovered = hit;paintScreen();element.style.cursor = hit ? 'pointer' : 'default';} requestRender(); }
-  function click(event: MouseEvent) { const rect = element.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1); raycaster.setFromCamera(pointer, camera); if (progress() < .4 && raycaster.intersectObject(screen).length) current.current.onEnter(); }
+  function screenUV(event: MouseEvent) {
+   const rect = element.getBoundingClientRect();
+   pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+   if (!desk.visible) return;
+   raycaster.setFromCamera(pointer, camera);
+   return raycaster.intersectObject(screen)[0]?.uv;
+  }
+  function move(event: PointerEvent) {
+   const hit = Boolean(screenUV(event));
+   if (hit !== hovered) { hovered = hit; paintScreen(); element.style.cursor = hit ? 'pointer' : 'default'; }
+   requestRender();
+  }
+  function click(event: MouseEvent) {
+   const uv = screenUV(event);
+   if (!uv) return;
+   // UV coordinates start at the bottom of the texture, unlike the canvas.
+   const x = uv.x * screenCanvas.width;
+   const y = (1 - uv.y) * screenCanvas.height;
+   const icon = icons.find(([, , left, top]) => x >= left - 32 && x <= left + 118 && y >= top - 18 && y <= top + 96);
+   current.current.onEnter(icon?.[0] ?? 'about', Boolean(icon));
+  }
   function lost(event: Event) { event.preventDefault(); cancelAnimationFrame(frame); current.current.onFail(); }
   const observer = new IntersectionObserver(entries => {visible = entries[0].isIntersecting; requestRender();});observer.observe(element);
   window.addEventListener('resize', resize);window.addEventListener('scroll', requestRender, { passive: true });document.addEventListener('visibilitychange', requestRender);window.addEventListener('pc-motion-change', requestRender);
