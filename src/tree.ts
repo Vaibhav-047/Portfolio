@@ -46,7 +46,7 @@ export function tex(name: string, srgb = true) {
   const t = loader.load(`/tree/tex/${name}.jpg`);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = 16;   // three clamps this to renderer.capabilities.getMaxAnisotropy(); mipmaps + trilinear are TextureLoader defaults
   return t;
 }
 
@@ -63,7 +63,7 @@ export interface Vine {
 export interface Gem { group: THREE.Group; shards: THREE.Mesh[]; core: THREE.Mesh; open: { value: number }; glow: { value: number } }
 
 function barkMaterial() {
-  const m = new THREE.MeshStandardMaterial({ map: tex('bark_color'), normalMap: tex('bark_normal', false), roughness: 0.92, metalness: 0, vertexColors: true });
+  const m = new THREE.MeshStandardMaterial({ map: tex('bark_color'), normalMap: tex('bark_normal', false), roughnessMap: tex('bark_roughness', false), roughness: 1.5, metalness: 0, vertexColors: true });
   m.normalScale.set(1.6, 1.6);
   m.onBeforeCompile = s => {
     Object.assign(s.uniforms, { uTime: U.uTime, uTeal: U.uTeal, uRipple: U.uRipple, uMoss: { value: tex('moss_color') },
@@ -78,6 +78,12 @@ function barkMaterial() {
         float mt = texture2D(uMoss, vWPos.xz * .3 + vWPos.y * .17).g;
         float mm = smoothstep(.3, .62, mossW + (mt - .35) * .7);
         diffuseColor.rgb = mix(bark, cMoss * (.35 + mt * 1.9), mm) * mix(.34, 1., ao);`)
+      .replace('#include <normal_fragment_maps>', /* glsl */`
+        // the same bark normal again at 4x repeat keeps close-ups crisp
+        vec3 mapN = texture2D(normalMap, vNormalMapUv).xyz * 2. - 1.;
+        vec3 detN = texture2D(normalMap, vNormalMapUv * 4. + .37).xyz * 2. - 1.;
+        mapN = vec3((mapN.xy + detN.xy * .35) * normalScale, mapN.z);
+        normal = normalize(tbn * mapN);`)
       .replace('#include <emissivemap_fragment>', /* glsl */`
         // light pooled in the grooves, like the reference's glowing seams
         float seam = pow(clamp(1. - vColor.r, 0., 1.), 2.);
@@ -101,7 +107,7 @@ function buildLeaves(group: THREE.Group, tier: Tier) {
     uDark: { value: PAL.leafDark }, uMid: { value: PAL.leafMid }, uLight: { value: PAL.leafLight }, uMoonCol: { value: PAL.moon },
   };
   const mat = new THREE.ShaderMaterial({
-    uniforms, side: THREE.DoubleSide,
+    uniforms, side: THREE.DoubleSide, alphaToCoverage: true,
     vertexShader: /* glsl */`
       attribute vec4 aClump; attribute vec4 aRnd;
       varying vec2 vUv; varying vec3 vN; varying float vShade; varying float vDepth; varying float vAo; varying vec3 vW;
@@ -124,7 +130,7 @@ function buildLeaves(group: THREE.Group, tier: Tier) {
       varying vec2 vUv; varying vec3 vN; varying float vShade; varying float vDepth; varying float vAo; varying vec3 vW;
       ${FOG_PARS}
       void main(){
-        if (texture2D(uAlpha, vUv).r < .5) discard;
+        float a = texture2D(uAlpha, vUv).r, cov = clamp((a - .5) / max(fwidth(a), 1e-4) + .5, 0., 1.); if (cov < .01) discard;
         float tx = texture2D(uMap, vUv).g;
         vec3 n = normalize(vN);
         float up = n.y * .5 + .5, moon = max(0., dot(n, uMoonDir)), front = max(0., n.z) * .5;
@@ -134,7 +140,7 @@ function buildLeaves(group: THREE.Group, tier: Tier) {
         float under = smoothstep(.15, -.75, n.y);                       // undersides catch the vine light
         c += uTeal * under * .16 * smoothstep(16., 8., vW.y) + uMoonCol * moon * .1;
         c = mix(c, c * vec3(.55, .95, 1.05), .35) * .84;                 // blue hour: cooler and a touch darker than daylight green
-        gl_FragColor = vec4(applyFog(c, vDepth), 1.);
+        gl_FragColor = vec4(applyFog(c, vDepth), cov);   // alpha 0.5 test, edge resolved by alphaToCoverage + MSAA
         ${OUT}
       }`,
   });

@@ -21,7 +21,7 @@ export function pickTier(): Tier {
 
 /** Vignette + film grain; runs before tone mapping. */
 const FinishShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.035 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.03 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`,
   fragmentShader: /* glsl */`uniform sampler2D tDiffuse; uniform float uTime, uGrain; varying vec2 vUv;
     void main(){ vec4 c = texture2D(tDiffuse, vUv); vec2 q = vUv - .5;
@@ -51,8 +51,9 @@ gsap.ticker.lagSmoothing(0);   // a dropped frame must not stretch the journey: 
 
 export async function createScene(canvas: HTMLCanvasElement, tier: Tier, onProgress?: (fraction: number) => void): Promise<SceneApi> {
   THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => onProgress?.(loaded / total);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: tier !== 'low', powerPreference: 'high-performance' });
-  let dpr = Math.min(devicePixelRatio, tier === 'high' ? 1.5 : tier === 'mid' ? 1.25 : 1);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  // full device resolution (capped at 2); the frame loop only sheds it if FPS stays under ~50
+  let dpr = Math.min(devicePixelRatio, 2);
   renderer.setPixelRatio(dpr);
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   const scene = new THREE.Scene();
@@ -62,7 +63,7 @@ export async function createScene(canvas: HTMLCanvasElement, tier: Tier, onProgr
   const tree = await buildTree(scene, tier);
   const sections = tree.vines.filter(v => v.id) as (Vine & { id: SectionId })[];
 
-  const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: tier === 'high' ? 4 : 0 }));
+  const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
   composer.addPass(new RenderPass(scene, camera));
   // depth of field only on the high tier, and only while flying / at a gem
   const bokeh = tier === 'high' ? new BokehPass(scene, camera, { focus: 10, aperture: 0, maxblur: 0.006 }) : null;
@@ -240,7 +241,7 @@ export async function createScene(canvas: HTMLCanvasElement, tier: Tier, onProgr
 
     composer.render(dt);
     // quality adapts: if frames stay slow, shed resolution rather than stutter
-    slow = dt > 0.024 ? slow + 1 : Math.max(0, slow - 2);
+    slow = dt > 0.02 ? slow + 1 : Math.max(0, slow - 2);
     if (slow > 90 && dpr > 0.7) { dpr = Math.max(0.7, dpr - 0.2); renderer.setPixelRatio(dpr); resize(); slow = 0; }
   }
   frame();

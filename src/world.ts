@@ -209,7 +209,7 @@ function fallingLeaves(group: THREE.Group) {
   const geo = new THREE.PlaneGeometry(0.5, 0.58);
   geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seed, 4));
   const mesh = new THREE.InstancedMesh(geo, new THREE.ShaderMaterial({
-    side: THREE.DoubleSide, uniforms: { ...U, uMap: { value: tex('leaf_color') }, uAlpha: { value: tex('leaf_alpha', false) } },
+    side: THREE.DoubleSide, alphaToCoverage: true, uniforms: { ...U, uMap: { value: tex('leaf_color') }, uAlpha: { value: tex('leaf_alpha', false) } },
     vertexShader: /* glsl */`uniform float uTime; attribute vec4 aSeed; varying vec2 vUv; varying float vDepth;
       void main(){ vUv = (uv + vec2(floor(aSeed.w * 3.), 1.)) / 3.;
         float t = mod(uTime + aSeed.w * aSeed.z, aSeed.z), f = t / 12.;             // 12 s fall, the rest of the period hidden
@@ -220,7 +220,7 @@ function fallingLeaves(group: THREE.Group) {
         p += vec3(aSeed.x + sin(t * .8 + aSeed.w * 6.) * 1.3 + t * .22, 9.2 - f * 10.6, aSeed.y + cos(t * .6) * .9);
         vec4 mv = viewMatrix * vec4(p, 1.); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `uniform sampler2D uMap, uAlpha; varying vec2 vUv; varying float vDepth; ${FOG_PARS}
-      void main(){ if (texture2D(uAlpha, vUv).r < .5) discard; gl_FragColor = vec4(applyFog(texture2D(uMap, vUv).rgb * vec3(.55, .8, .45), vDepth), 1.); ${OUT} }`,
+      void main(){ float a = texture2D(uAlpha, vUv).r, cov = clamp((a - .5) / max(fwidth(a), 1e-4) + .5, 0., 1.); if (cov < .01) discard; gl_FragColor = vec4(applyFog(texture2D(uMap, vUv).rgb * vec3(.55, .8, .45), vDepth), cov); ${OUT} }`,
   }), n);
   mesh.frustumCulled = false; group.add(mesh);
 }
