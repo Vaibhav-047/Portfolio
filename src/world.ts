@@ -98,7 +98,7 @@ function ground() {
         diffuseColor.rgb = mix(diffuseColor.rgb, grass, smoothstep(5., 12., rr) * (.45 + .4 * patchy));
         diffuseColor.rgb *= mix(.5, 1., smoothstep(1.5, 8., rr));                     // contact shadow under the tree`)
       .replace('#include <emissivemap_fragment>', /* glsl */`
-        totalEmissiveRadiance += uTeal * step(0., uRipple) * exp(-pow((rr - uRipple) * 1.3, 2.)) * .9 * smoothstep(13., 4., rr);`);
+        totalEmissiveRadiance += uTeal * step(0., uRipple) * exp(-pow((rr - uRipple) * 1.5, 2.)) * .45 * smoothstep(13., 4., rr);`);
   };
   return new THREE.Mesh(geo, m);
 }

@@ -16,7 +16,7 @@ export const PAL = {
   moss: col('#5C8A2E'), teal: col('#35E0C0'), gemBlue: col('#3E9BFF'), gemCyan: col('#4FE8E8'),
   fog: col('#1F4A4A'), moon: col('#CFE8FF'),
 };
-export const MOON_DIR = new THREE.Vector3(-0.455, 0.33, -0.83).normalize();   // behind the tree, upper left
+export const MOON_DIR = new THREE.Vector3(-0.40, 0.335, -0.85).normalize();   // behind the tree, upper left
 
 /** Uniforms shared by every custom shader. */
 export const U = {
@@ -82,7 +82,7 @@ function barkMaterial() {
         float seam = pow(clamp(1. - vColor.r, 0., 1.), 2.);
         totalEmissiveRadiance += uTeal * seam * (.035 + .02 * sin(uTime * .7 + vWPos.y * 1.3));
         float rr = length(vWPos.xz);
-        totalEmissiveRadiance += uTeal * step(0., uRipple) * exp(-pow((rr - uRipple) * 1.6, 2.)) * smoothstep(3.5, .5, vWPos.y) * (1.2 + 3. * seam);`);
+        totalEmissiveRadiance += uTeal * step(0., uRipple) * exp(-pow((rr - uRipple) * 1.8, 2.)) * smoothstep(3.5, .5, vWPos.y) * (.3 + 1.6 * seam);`);
   };
   return m;
 }
@@ -210,9 +210,9 @@ function vineMaterial(length: number, radius: number, strong: boolean) {
         float nz = clamp(abs(normalize(vN).z), 0., 1.); float rim = pow(1. - nz, 1.5);   // clamped: MSAA can extrapolate varyings and pow(<0) is NaN
         vec3 body = vec3(.012, .075, .06) * (.4 + .6 * nz);
         float glow = uGlow * breathe * (.22 + 2.6 * flow) + uHover * (1.2 + 2.5 * flow);
-        glow += smoothstep(uLit + .02, uLit - .05, vUv.x) * step(.001, uLit) * 1.6;
-        float pulse = uPulse < 0. ? 0. : exp(-pow((vUv.x - uPulse) * uLen / 1.1, 2.)) * 9.;
-        vec3 c = body + uTeal * glow * (.45 + .6 * rim) + mix(uTeal, vec3(1.), .55) * pulse;
+        glow += smoothstep(uLit + .02, uLit - .05, vUv.x) * step(.001, uLit) * .8;
+        float pulse = uPulse < 0. ? 0. : exp(-pow((vUv.x - uPulse) * uLen / 1.1, 2.)) * 5.;
+        vec3 c = body + uTeal * glow * (.3 + .9 * nz * nz + .25 * rim) + mix(uTeal, vec3(1.), .55) * pulse;
         gl_FragColor = vec4(applyFog(c, vDepth), 1.);
         ${OUT}
       }`,
@@ -235,10 +235,10 @@ function buildGem(color: THREE.Color): Gem {
 }
 export function updateGem(g: Gem, t: number) {
   const o = g.open.value;
-  g.shards.forEach((s, k) => { s.rotation.z = -o * 1.25; s.position.x = 0.09 + o * 0.16; s.position.y = o * 0.1 + Math.sin(t * 1.4 + k) * 0.008; });
-  g.core.scale.setScalar(0.5 + o * 2.2 + Math.sin(t * 3) * 0.06);
-  (g.core.material as THREE.MeshBasicMaterial).color.setScalar(0.9 + o * 3 + g.glow.value * 0.3);
-  (g.shards[0].material as THREE.MeshStandardMaterial).emissiveIntensity = 0.55 + g.glow.value * 0.45 + o * 1.5;
+  g.shards.forEach((s, k) => { s.rotation.z = -o * 1.05; s.position.x = 0.09 + o * 0.2; s.position.y = o * 0.1 + Math.sin(t * 1.4 + k) * 0.008; });
+  g.core.scale.setScalar(0.5 + o * 0.9 + Math.sin(t * 3) * 0.06);
+  (g.core.material as THREE.MeshBasicMaterial).color.setScalar(0.8 + o * 1.1 + g.glow.value * 0.25);
+  (g.shards[0].material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + g.glow.value * 0.4 + o * 0.5;
   g.group.rotation.y = t * 0.25;
 }
 
@@ -268,14 +268,14 @@ function buildVines(group: THREE.Group, tier: Tier) {
     vines.push(vine);
   });
   const small = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.085, 0),
-    new THREE.MeshStandardMaterial({ color: '#7f95b5', roughness: 0.3, flatShading: true }), gemPts.length);
+    new THREE.MeshStandardMaterial({ color: '#46587a', roughness: 0.25, metalness: 0.35, flatShading: true }), gemPts.length);
   const o = new THREE.Object3D();
   gemPts.forEach((p, i) => {
     o.position.copy(p); o.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); o.scale.set(1, 1.5, 1).multiplyScalar(0.7 + Math.random() * 0.8);
     o.updateMatrix(); small.setMatrixAt(i, o.matrix); small.setColorAt(i, i % 2 ? PAL.gemBlue : PAL.gemCyan);
   });
   // emissive follows the instance colour so each gem glows in its own blue
-  small.material.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = vColor.rgb * 0.9;'); };
+  small.material.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = vColor.rgb * 0.75;'); };
   small.frustumCulled = false;
   group.add(small);
   return vines;
